@@ -1,0 +1,63 @@
+#!/data/data/com.termux/files/usr/bin/bash
+
+# DAP-ERROR-INFO - Intelligent Diagnostic Tool
+# v1.2 - DESS-STATION SUPPORT
+
+clear
+echo -e "\e[1;36m██████   █████  ██████ "
+echo -e "██   ██ ██   ██ ██   ██"
+echo -e "██   ██ ███████ ██████ "
+echo -e "██   ██ ██   ██ ██     "
+echo -e "██████  ██   ██ ██           \e[1;31mDAP-ERROR-INFO v1.2\e[0m"
+echo "--------------------------------------------------"
+echo -e "\e[1;33m>>> LIVE SYSTEM ANALYSIS <<<\e[0m"
+
+# Variáveis de detecção
+ERR_TYPE=""
+FREE_SPACE=$(df -h $PREFIX | awk 'NR==2 {print $4}')
+SPACE_VAL=$(df $PREFIX | awk 'NR==2 {print $4}')
+
+# 1. Detecção de Erros em Tempo Real
+if ! command -v openssl &>/dev/null; then
+    ERR_TYPE="CORE_MISSING"
+elif [[ $SPACE_VAL -lt 102400 ]]; then # Menos de 100MB
+    ERR_TYPE="LOW_SPACE"
+elif [ ! -w "/sdcard" ] && [ -d "/sdcard" ]; then
+    ERR_TYPE="PERM_DENIED"
+fi
+
+# Exibição do Status
+echo -e "[*] Storage:   \e[1;32m$FREE_SPACE Free\e[0m"
+echo -ne "[*] Network:   "; ping -c 1 8.8.8.8 &>/dev/null && echo -e "\e[1;32mConnected\e[0m" || echo -e "\e[1;31mDisconnected\e[0m"
+echo -ne "[*] Sec-Core:  "; [[ "$ERR_TYPE" == "CORE_MISSING" ]] && echo -e "\e[1;31mMissing\e[0m" || echo -e "\e[1;32mFound\e[0m"
+
+echo "--------------------------------------------------"
+echo -e "\e[1;33m>>> DIAGNOSED SOLUTION (PRIORITY) <<<\e[0m"
+
+# 2. Exibição Dinâmica do Erro Encontrado
+if [[ "$ERR_TYPE" == "CORE_MISSING" ]]; then
+    echo -e "\e[1;31m[DETECTED] ISSUE: Security Core Functions are Missing\e[0m"
+    echo "    Solution: Your Termux database is likely locked or corrupted."
+    echo "    - Run: pkg update && pkg upgrade"
+    echo "    - Then: pkg install openssl"
+elif [[ "$ERR_TYPE" == "LOW_SPACE" ]]; then
+    echo -e "\e[1;31m[DETECTED] ISSUE: Low Disk Space\e[0m"
+    echo "    Solution: DAP requires at least 100MB to process archives."
+    echo "    - Run: pkg clean"
+elif [[ "$ERR_TYPE" == "PERM_DENIED" ]]; then
+    echo -e "\e[1;31m[DETECTED] ISSUE: Storage Permission Denied\e[0m"
+    echo "    Solution: Termux cannot write to /sdcard."
+    echo "    - Run: termux-setup-storage"
+else
+    echo -e "\e[1;32m[OK] No critical system errors detected.\e[0m"
+    echo "    If DAP still fails, try restarting Termux."
+fi
+
+echo "--------------------------------------------------"
+echo -e "\e[1;33m>>> OTHER POSSIBILITIES <<<\e[0m"
+[[ "$ERR_TYPE" != "CORE_MISSING" ]] && echo "- Database Lock: Run 'pkg update'"
+[[ "$ERR_TYPE" != "PERM_DENIED" ]] && echo "- SDCard Access: Run 'termux-setup-storage'"
+echo "- Repository Error: Run 'termux-change-repo'"
+
+echo "--------------------------------------------------"
+echo -e "\e[1;37mDESS-STATION OFFICIAL SUPPORT - 2026\e[0m"
